@@ -1,0 +1,8 @@
+excluded/
+.codex/
+.direnv/
+.env
+.env.*
+.DS_Store
+*.swp
+*.swo

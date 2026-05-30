@@ -1,0 +1,8 @@
+nmap,nmap
+ffuf,ffuf
+git,git
+docker,docker.io
+curl,curl
+wget,wget
+jq,jq
+ripgrep,ripgrep

@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGISTRY="$(dirname "$0")/../registry/packages.csv"
+
+usage() {
+  echo "Arc Ubuntu MVP"
+  echo "Commands: install, search, doctor, bootstrap, list"
+}
+
+search_pkg() {
+  local pkg="$1"
+  grep -i "^${pkg}," "$REGISTRY" || true
+  apt-cache search "$pkg" | head -20 || true
+}
+
+install_pkg() {
+  local pkg="$1"
+  if grep -qi "^${pkg}," "$REGISTRY"; then
+    local aptname
+    aptname=$(grep -i "^${pkg}," "$REGISTRY" | head -1 | cut -d',' -f2)
+    echo "[arc] Installing via apt: $aptname"
+    sudo apt update
+    sudo apt install -y "$aptname"
+  else
+    echo "[arc] Not in registry, checking apt..."
+    if apt-cache show "$pkg" >/dev/null 2>&1; then
+      sudo apt update
+      sudo apt install -y "$pkg"
+    else
+      echo "[arc] Package not found."
+      exit 1
+    fi
+  fi
+}
+
+doctor() {
+  echo "OS:"
+  grep PRETTY_NAME /etc/os-release || true
+  echo
+  for c in apt flatpak cargo go pipx brew; do
+    if command -v "$c" >/dev/null 2>&1; then
+      echo "[OK] $c"
+    else
+      echo "[MISSING] $c"
+    fi
+  done
+}
+
+bootstrap() {
+  echo "Ubuntu bootstrap"
+  read -p "Install Flatpak? [y/N] " a
+  [[ "$a" =~ ^[Yy]$ ]] && sudo apt install -y flatpak
+  read -p "Install pipx? [y/N] " b
+  [[ "$b" =~ ^[Yy]$ ]] && sudo apt install -y pipx
+  read -p "Install Go? [y/N] " c
+  [[ "$c" =~ ^[Yy]$ ]] && sudo apt install -y golang-go
+  read -p "Install Cargo/Rust? [y/N] " d
+  [[ "$d" =~ ^[Yy]$ ]] && sudo apt install -y cargo
+}
+
+case "${1:-}" in
+  install) install_pkg "${2:-}" ;;
+  search) search_pkg "${2:-}" ;;
+  doctor) doctor ;;
+  bootstrap) bootstrap ;;
+  list) cat "$REGISTRY" ;;
+  *) usage ;;
+esac
